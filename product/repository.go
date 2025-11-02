@@ -26,6 +26,15 @@ const (
 
 	deleteProduct = `DELETE FROM product
 	WHERE id = $1`
+
+	updateProduct = `UPDATE product 
+	SET name = $1, 
+		description = $2, 
+		price = $3, 
+		stock = $4, 
+		updatedAt = $5, 
+		isActive = $6 
+	WHERE id = $7`
 )
 
 type repository struct {
@@ -37,6 +46,7 @@ type Repository interface {
 	FindByID(ctx context.Context, id string) (*Product, error)
 	FindAll(ctx context.Context, page int, limit int, sort string) ([]Product, error)
 	DeleteProduct(ctx context.Context, id string) error
+	UpdateProduct(ctx context.Context, product *Product) (*Product, error)
 }
 
 func NewRepository(Db *sql.DB) Repository {
@@ -137,7 +147,7 @@ func scanProducts(rows *sql.Rows) ([]Product, error) {
 	return products, nil
 }
 
-func  (r *repository) DeleteProduct(ctx context.Context, id string) error{
+func (r *repository) DeleteProduct(ctx context.Context, id string) error{
 
 	product, err := r.FindByID(ctx, id)
 
@@ -150,4 +160,33 @@ func  (r *repository) DeleteProduct(ctx context.Context, id string) error{
 		return err
 	}
 	return nil
+}
+
+func (r *repository) UpdateProduct(ctx context.Context, product *Product) (*Product, error) {
+	// Verifica se o produto existe
+	_, err := r.FindByID(ctx, product.ID.String())
+	if err != nil {
+		return nil, err
+	}
+
+	// Atualiza o timestamp
+	product.UpdatedAt = time.Now()
+
+	// Executa o update
+	_, err = r.Db.ExecContext(ctx, updateProduct,
+		product.Name,
+		product.Description,
+		product.Price,
+		product.Stock,
+		product.UpdatedAt,
+		product.IsActive,
+		product.ID,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Retorna o produto atualizado
+	return product, nil
 }
