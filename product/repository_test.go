@@ -30,3 +30,26 @@ func TestCreateProduct_Success(t *testing.T) {
 
 	assert.NoError(t, err)
 }
+
+func TestGetProduct_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	product_uuid := uuid.New()
+	userid := uuid.New()
+
+	repo_product := product.NewRepository(db)
+
+	rows := sqlmock.NewRows([]string{"id", "name", "description", "price", "stock", "createdAt", "updatedAt", "isActive", "userID"}).
+		AddRow(product_uuid, "product1", "novo produto cadastrado", 200.00, 5, time.Now(), time.Now(), true, userid)
+
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT * from product WHERE id = $1")).
+		WithArgs(product_uuid).
+		WillReturnRows(rows)
+
+	product, err := repo_product.FindByID(context.Background(), product_uuid.String())
+
+	assert.NoError(t, err)
+	assert.Equal(t, "product1", product.Name)
+}
