@@ -4,7 +4,6 @@ import (
 	"context"
 	"regexp"
 	"testing"
-	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/celio001/prodify/product"
@@ -23,7 +22,7 @@ func TestCreateProduct_Success(t *testing.T) {
 	repo_product := product.NewRepository(db)
 
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO product (id, name, description, price, stock, createdAt, updatedAt, isActive, userID) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)")).
-		WithArgs(product_uuid, "product1", "novo produto cadastrado", 200.00, 5, time.Now(), time.Now(), true, userid).
+		WithArgs(product_uuid, "product1", "novo produto cadastrado", 200.00, 5, sqlmock.AnyArg(), sqlmock.AnyArg(), true, userid).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	err = repo_product.CreateProduct(context.Background(), product_uuid, "product1", "novo produto cadastrado", 200.00, 5, userid)
@@ -42,7 +41,7 @@ func TestGetProduct_Success(t *testing.T) {
 	repo_product := product.NewRepository(db)
 
 	rows := sqlmock.NewRows([]string{"id", "name", "description", "price", "stock", "createdAt", "updatedAt", "isActive", "userID"}).
-		AddRow(product_uuid, "product1", "novo produto cadastrado", 200.00, 5, time.Now(), time.Now(), true, userid)
+		AddRow(product_uuid, "product1", "novo produto cadastrado", 200.00, 5, sqlmock.AnyArg(), sqlmock.AnyArg(), true, userid)
 
 	mock.ExpectQuery(regexp.QuoteMeta("SELECT * from product WHERE id = $1")).
 		WithArgs(product_uuid).
@@ -60,11 +59,11 @@ func TestFindAll_WithPagination(t *testing.T) {
 	defer db.Close()
 
 	repo_product := product.NewRepository(db)
-	
+
 	product1_uuid := uuid.New()
 	product2_uuid := uuid.New()
 	userid := uuid.New()
-	now := time.Now()
+	now := sqlmock.AnyArg()
 
 	rows := sqlmock.NewRows([]string{"id", "name", "description", "price", "stock", "createdAt", "updatedAt", "isActive", "userID"}).
 		AddRow(product1_uuid, "product1", "description 1", 200.00, 5, now, now, true, userid).
@@ -73,7 +72,7 @@ func TestFindAll_WithPagination(t *testing.T) {
 	mock.ExpectQuery(regexp.QuoteMeta(`SELECT id, name, description, price, stock, createdAt, updatedAt, isActive, userID 
 	FROM product 
 	ORDER BY createdAt $1 LIMIT $2 OFFSET $3`)).
-		WithArgs("asc", 2, 0). 
+		WithArgs("asc", 2, 0).
 		WillReturnRows(rows)
 
 	products, err := repo_product.FindAll(context.Background(), 1, 2, "asc")
@@ -90,12 +89,12 @@ func TestFindAll_WithoutPagination(t *testing.T) {
 	defer db.Close()
 
 	repo_product := product.NewRepository(db)
-	
+
 	product1_uuid := uuid.New()
 	product2_uuid := uuid.New()
 	product3_uuid := uuid.New()
 	userid := uuid.New()
-	now := time.Now()
+	now := sqlmock.AnyArg()
 
 	rows := sqlmock.NewRows([]string{"id", "name", "description", "price", "stock", "createdAt", "updatedAt", "isActive", "userID"}).
 		AddRow(product1_uuid, "product1", "description 1", 200.00, 5, now, now, true, userid).
@@ -105,7 +104,7 @@ func TestFindAll_WithoutPagination(t *testing.T) {
 	mock.ExpectQuery(regexp.QuoteMeta(`SELECT id, name, description, price, stock, createdAt, updatedAt, isActive, userID 
 	FROM product 
 	ORDER BY createdAt $1`)).
-		WithArgs("desc"). 
+		WithArgs("desc").
 		WillReturnRows(rows)
 
 	products, err := repo_product.FindAll(context.Background(), 0, 0, "desc")
