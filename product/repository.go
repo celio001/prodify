@@ -23,6 +23,9 @@ const (
 	findAll = `SELECT id, name, description, price, stock, createdAt, updatedAt, isActive, userID 
 	FROM product 
 	ORDER BY createdAt $1`
+
+	deleteProduct = `DELETE FROM product
+	WHERE id = $1`
 )
 
 type repository struct {
@@ -33,6 +36,7 @@ type Repository interface {
 	CreateProduct(ctx context.Context, id uuid.UUID, name string, description string, price float64, stock int, userID uuid.UUID) error
 	FindByID(ctx context.Context, id string) (*Product, error)
 	FindAll(ctx context.Context, page int, limit int, sort string) ([]Product, error)
+	DeleteProduct(ctx context.Context, id string) error
 }
 
 func NewRepository(Db *sql.DB) Repository {
@@ -131,4 +135,19 @@ func scanProducts(rows *sql.Rows) ([]Product, error) {
 	}
 
 	return products, nil
+}
+
+func  (r *repository) DeleteProduct(ctx context.Context, id string) error{
+
+	product, err := r.FindByID(ctx, id)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = r.Db.ExecContext(ctx, deleteProduct, product.ID.String())
+	if err != nil {
+		return err
+	}
+	return nil
 }
