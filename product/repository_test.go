@@ -117,3 +117,32 @@ func TestFindAll_WithoutPagination(t *testing.T) {
 	assert.Equal(t, "product2", products[1].Name)
 	assert.Equal(t, "product3", products[2].Name)
 }
+
+func TestDeleteProduct_Success(t *testing.T){
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	repo_product := product.NewRepository(db)
+
+	product1_uuid := uuid.New()
+
+	userid := uuid.New()
+	now := time.Date(2023, 1, 1, 12, 0, 0, 0, time.UTC)
+
+	rows := sqlmock.NewRows([]string{"id", "name", "description", "price", "stock", "createdAt", "updatedAt", "isActive", "userID"}).
+		AddRow(product1_uuid, "product1", "description 1", 200.00, 5, now, now, true, userid)
+	
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT * from product WHERE id = $1")).
+		WithArgs(product1_uuid).
+		WillReturnRows(rows)
+
+	mock.ExpectExec(regexp.QuoteMeta(`DELETE FROM product
+	WHERE id = $1`)).
+	WithArgs(product1_uuid).
+	WillReturnResult(sqlmock.NewResult(1, 1))
+
+	err = repo_product.DeleteProduct(context.Background(), product1_uuid.String())
+
+	assert.NoError(t, err)
+}
