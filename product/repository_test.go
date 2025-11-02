@@ -118,7 +118,7 @@ func TestFindAll_WithoutPagination(t *testing.T) {
 	assert.Equal(t, "product3", products[2].Name)
 }
 
-func TestDeleteProduct_Success(t *testing.T){
+func TestDeleteProduct_Success(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.NoError(t, err)
 	defer db.Close()
@@ -145,4 +145,52 @@ func TestDeleteProduct_Success(t *testing.T){
 	err = repo_product.DeleteProduct(context.Background(), product1_uuid.String())
 
 	assert.NoError(t, err)
+}
+
+func TestUpdateProduct_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	repo_product := product.NewRepository(db)
+
+	product_uuid := uuid.New()
+	userid := uuid.New()
+	now := time.Date(2023, 1, 1, 12, 0, 0, 0, time.UTC)
+
+	findRows := sqlmock.NewRows([]string{"id", "name", "description", "price", "stock", "createdAt", "updatedAt", "isActive", "userID"}).
+		AddRow(product_uuid, "product1", "description 1", 200.00, 5, now, now, true, userid)
+
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT * from product WHERE id = $1")).
+		WithArgs(product_uuid).
+		WillReturnRows(findRows)
+
+	mock.ExpectExec(regexp.QuoteMeta(`UPDATE product 
+	SET name = $1, 
+		description = $2, 
+		price = $3, 
+		stock = $4, 
+		updatedAt = $5, 
+		isActive = $6 
+	WHERE id = $7`)).
+		WithArgs("Updated Product", "Updated description", 299.99, 10, sqlmock.AnyArg(), true, product_uuid).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	productToUpdate := &product.Product{
+		ID:          product_uuid,
+		Name:        "Updated Product",
+		Description: "Updated description",
+		Price:       299.99,
+		Stock:       10,
+		IsActive:    true,
+		UserID:      userid,
+	}
+
+	updatedProduct, err := repo_product.UpdateProduct(context.Background(), productToUpdate)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "Updated Product", updatedProduct.Name)
+	assert.Equal(t, "Updated description", updatedProduct.Description)
+	assert.Equal(t, 299.99, updatedProduct.Price)
+	assert.Equal(t, 10, updatedProduct.Stock)
 }
