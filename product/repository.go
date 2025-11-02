@@ -19,6 +19,10 @@ const (
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
 
 	getProduct = `SELECT * from product WHERE id = $1`
+
+	findAll = `SELECT id, name, description, price, stock, createdAt, updatedAt, isActive, userID 
+	FROM product 
+	ORDER BY createdAt $1`
 )
 
 type repository struct {
@@ -28,6 +32,7 @@ type repository struct {
 type Repository interface {
 	CreateProduct(ctx context.Context, id uuid.UUID, name string, description string, price float64, stock int, userID uuid.UUID) error
 	FindByID(ctx context.Context, id string) (*Product, error)
+	FindAll(ctx context.Context, page int, limit int, sort string) ([]Product, error)
 }
 
 func NewRepository(Db *sql.DB) Repository {
@@ -69,4 +74,61 @@ func (r *repository) FindByID(ctx context.Context, id string) (*Product, error) 
 	}
 
 	return &product, nil
+}
+
+func (r *repository) FindAll(ctx context.Context, page int, limit int, sort string) ([]Product, error) {
+
+	if sort != "desc" {
+		sort = "asc"
+	}
+
+	if page != 0 && limit != 0 {
+		offset := (page - 1) * limit
+		query := findAll + ` LIMIT $2 OFFSET $3`
+		
+		rows, err := r.Db.QueryContext(ctx, query, sort, limit, offset)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+
+		return scanProducts(rows)
+	}
+
+	rows, err := r.Db.QueryContext(ctx, findAll, sort)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	return scanProducts(rows)
+}
+
+func scanProducts(rows *sql.Rows) ([]Product, error) {
+	var products []Product
+
+	for rows.Next() {
+		var product Product
+		err := rows.Scan(
+			&product.ID,
+			&product.Name,
+			&product.Description,
+			&product.Price,
+			&product.Stock,
+			&product.CreatedAt,
+			&product.UpdatedAt,
+			&product.IsActive,
+			&product.UserID,
+		)
+		if err != nil {
+			return nil, err
+		}
+		products = append(products, product)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return products, nil
 }
