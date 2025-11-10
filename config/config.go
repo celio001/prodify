@@ -38,18 +38,18 @@ func validateEnvsDb(user string, host string, port string, password string, dbNa
 	return nil
 }
 
-func LoadDvConfig() *DbConfig {
+func LoadDbConfig() *DbConfig {
 
 	err := godotenv.Load()
 	if err != nil {
 		log.Println("info: não encotnrado arquivo env (esperado em produção)")
 	}
 
-	user := os.Getenv("user")
-	host := os.Getenv("user")
-	port := os.Getenv("user")
-	password := os.Getenv("user")
-	dbName := os.Getenv("user")
+	user := os.Getenv("USER")
+	host := os.Getenv("HOST")
+	port := os.Getenv("PORT")
+	password := os.Getenv("PASSWORD")
+	dbName := os.Getenv("DB_NAME")
 
 	err = validateEnvsDb(user, host, port, password, dbName)
 	if err != nil {
