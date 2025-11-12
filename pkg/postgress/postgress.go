@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/celio001/prodify/config"
+	_ "github.com/lib/pq"
 )
 
 func NewInstance(dbConfig *config.DbConfig) (*sql.DB, error){
