@@ -3,7 +3,6 @@ package cmd
 import (
 	"log"
 
-	"github.com/celio001/prodify/config"
 	"github.com/celio001/prodify/internal/fiber"
 	"github.com/celio001/prodify/pkg/lifecycle"
 	"github.com/celio001/prodify/pkg/postgress"
@@ -25,9 +24,8 @@ func init() {
 }
 
 func ApiExecute(cmd *cobra.Command, args []string) error {
-	confs := config.LoadDbConfig()
 
-	db, err := postgress.NewInstance(confs)
+	db, err := postgress.NewInstance()
 
 	if err != nil {
 		log.Printf("%v", err)

@@ -1,66 +1,33 @@
 package config
 
 import (
-	"errors"
-	"log"
 	"os"
-
-	"github.com/joho/godotenv"
+	"strconv"
 )
 
-type DbConfig struct {
-	User     string
-	Host     string
-	Port     string
-	Password string
-	DbName   string
+var config = map[string]string{
+	//postgress
+	"USER_POST":     "USER_POST",
+	"HOST_POST":     "HOST_POST",
+	"PORT_POST":     "PORT_POST",
+	"PASSWORD_POST": "PASSWORD_POST",
+	"DB_NAME_POST":  "DB_NAME_POST",
 }
 
-func validateEnvsDb(user string, host string, port string, password string, dbName string) error {
-	if user == "" && host == "" && port == "" && password == "" && dbName == ""{
-		return errors.New("Nenhuma env foi DB foi definida")
+func GetString(k string) string {
+	v := os.Getenv(k)
+	if v == "" {
+		return config[k]
 	}
-	if user == ""{
-		return errors.New("user DB não definido")
-	}
-	if host == ""{
-		return errors.New("host DB não definido")
-	}
-	if port == ""{
-		return errors.New("port DB não definido")
-	}
-	if password == ""{
-		return errors.New("password DB não definido")
-	}
-	if dbName == ""{
-		return errors.New("dbName DB não definido")
-	}
-	return nil
+	return v
 }
 
-func LoadDbConfig() *DbConfig {
-
-	err := godotenv.Load()
+func GetInt(k string) int {
+	v := GetString(k)
+	i, err := strconv.Atoi(v)
 	if err != nil {
-		log.Println("info: não encotnrado arquivo env (esperado em produção)")
+		panic(err)
 	}
 
-	user := os.Getenv("USER")
-	host := os.Getenv("HOST")
-	port := os.Getenv("PORT")
-	password := os.Getenv("PASSWORD")
-	dbName := os.Getenv("DB_NAME")
-
-	err = validateEnvsDb(user, host, port, password, dbName)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return &DbConfig{
-		User: user,
-		Host: host,
-		Port: port,
-		Password: password,
-		DbName: dbName,
-	}
+	return i
 }
