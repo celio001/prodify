@@ -6,7 +6,9 @@ import (
 	"errors"
 	"time"
 
+	"github.com/celio001/prodify/pkg/logger"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 var (
@@ -99,9 +101,10 @@ func (r *repository) FindAll(ctx context.Context, page int, limit int, sort stri
 	if page != 0 && limit != 0 {
 		offset := (page - 1) * limit
 		query := findAll + ` LIMIT $2 OFFSET $3`
-		
+
 		rows, err := r.Db.QueryContext(ctx, query, sort, limit, offset)
 		if err != nil {
+			logger.Log.Error("error exec QueryContext", zap.String("error", err.Error()))
 			return nil, err
 		}
 		defer rows.Close()
@@ -141,13 +144,14 @@ func scanProducts(rows *sql.Rows) ([]Product, error) {
 	}
 
 	if err := rows.Err(); err != nil {
+		logger.Log.Error("error row", zap.String("error", err.Error()))
 		return nil, err
 	}
 
 	return products, nil
 }
 
-func (r *repository) DeleteProduct(ctx context.Context, id string) error{
+func (r *repository) DeleteProduct(ctx context.Context, id string) error {
 
 	product, err := r.FindByID(ctx, id)
 
@@ -157,22 +161,20 @@ func (r *repository) DeleteProduct(ctx context.Context, id string) error{
 
 	_, err = r.Db.ExecContext(ctx, deleteProduct, product.ID.String())
 	if err != nil {
+		logger.Log.Error("error exec ExecContext delete product", zap.String("error", err.Error()))
 		return err
 	}
 	return nil
 }
 
 func (r *repository) UpdateProduct(ctx context.Context, product *Product) (*Product, error) {
-	// Verifica se o produto existe
 	_, err := r.FindByID(ctx, product.ID.String())
 	if err != nil {
 		return nil, err
 	}
 
-	// Atualiza o timestamp
 	product.UpdatedAt = time.Now()
 
-	// Executa o update
 	_, err = r.Db.ExecContext(ctx, updateProduct,
 		product.Name,
 		product.Description,
@@ -184,9 +186,9 @@ func (r *repository) UpdateProduct(ctx context.Context, product *Product) (*Prod
 	)
 
 	if err != nil {
+		logger.Log.Error("error exec ExecContext delete update product", zap.String("error", err.Error()))
 		return nil, err
 	}
 
-	// Retorna o produto atualizado
 	return product, nil
 }

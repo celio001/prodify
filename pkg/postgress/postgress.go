@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/celio001/prodify/config"
+	"github.com/celio001/prodify/pkg/logger"
 	_ "github.com/lib/pq"
 )
 
@@ -39,5 +40,6 @@ func NewInstance() (*sql.DB, error) {
 		return nil, err
 	}
 
+	logger.Log.Info("connected database")
 	return db, nil
 }
