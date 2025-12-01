@@ -16,5 +16,17 @@ func NewProductHandler(productRepository product.Repository) *ProductHandler {
 }
 
 func (h *ProductHandler) GetProduct(c *fiber.Ctx) error {
-	return nil
+
+	id := c.Query("id")
+
+	prod, err := h.productRepository.FindByID(c.Context(), id)
+	if err != nil {
+		if err == product.ErrProductNotFound {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": product.ErrProductNotFound.Error()})
+		} else {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+	}
+
+	return c.Status(fiber.StatusOK).JSON(prod)
 }
