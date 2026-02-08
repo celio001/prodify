@@ -12,13 +12,11 @@ var (
 	ErrJSONDecode   = errors.New("failed to decode json body")
 )
 
-func LimitBodyJSON(c *fiber.Ctx, limit int, dest any) error {
-	body := c.Body()
-	if body == nil || len(body) == 0 {
-		return ErrJSONDecode
-	}
+func LimitBodyJSON(ctx *fiber.Ctx, limit int64, dest any) error {
 
-	if len(body) > limit {
+	body := ctx.Body()
+
+	if int64(len(body)) > limit {
 		return ErrBodyTooLarge
 	}
 
