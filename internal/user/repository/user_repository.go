@@ -14,12 +14,12 @@ import (
 )
 
 const (
-	getUserByPublicIDQuery = `SELECT id, publicId, name, email, password_hash, role, isActive, created_at, updated_at 
+	getUserByPublicIDQuery = `SELECT id, public_id, name, email, password_hash, role, isActive, created_at, updated_at 
 	FROM users 
-	WHERE publicId = $1
+	WHERE public_id = $1
 	AND deleted_at IS NULL`
 
-	getUserByEmailQuery = `SELECT publicId, name, email, password_hash, role, isActive, created_at, updated_at 
+	getUserByEmailQuery = `SELECT public_id, name, email, password_hash, role, isActive, created_at, updated_at 
 	FROM users 
 	WHERE email = $1
 	AND deleted_at IS NULL`
@@ -27,7 +27,7 @@ const (
 	createUserQuery = `INSERT INTO users (name, email, password_hash, is_active) 
 	VALUES ($1, $2, $3, $4)`
 
-	softDeleteUserQuery = `PDATE users
+	softDeleteUserQuery = `UPDATE users
 	SET deleted_at = now(), updated_at = now(), is_active = false
 	WHERE user_id = $1`
 
@@ -63,8 +63,9 @@ func (r *userRepository) GetUserByPublicID(publicId uuid.UUID) (*user_types.GetU
 	row := r.Db.QueryRowContext(ctx, getUserByPublicIDQuery, publicId)
 
 	var user user_types.GetUserResponse
-	err := row.Scan(&user.PublicID,
+	err := row.Scan(
 		&user.ID,
+		&user.PublicID,
 		&user.Name,
 		&user.Email,
 		&user.PasswordHash,

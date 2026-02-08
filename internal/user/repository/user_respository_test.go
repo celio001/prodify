@@ -30,6 +30,7 @@ func TestGetUserByPublicID(t *testing.T) {
 		{
 			name: "success",
 			mockRows: sqlmock.NewRows([]string{
+				"id",
 				"publicId",
 				"name",
 				"email",
@@ -39,6 +40,7 @@ func TestGetUserByPublicID(t *testing.T) {
 				"created_at",
 				"updated_at",
 			}).AddRow(
+				1,
 				publicID,
 				"Célio",
 				"celio@email.com",
