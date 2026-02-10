@@ -1,4 +1,4 @@
-package user_mock
+package user_repository_mock
 
 import (
 	user_types "github.com/celio001/prodify/internal/user/type"

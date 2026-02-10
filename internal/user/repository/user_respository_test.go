@@ -379,3 +379,4 @@ func TestUpdateUser(t *testing.T) {
 		})
 	}
 }
+
