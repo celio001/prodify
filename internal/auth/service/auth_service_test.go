@@ -9,6 +9,7 @@ import (
 	user_errors "github.com/celio001/prodify/internal/user/errors"
 	user_mock "github.com/celio001/prodify/internal/user/repository/mock"
 	user_types "github.com/celio001/prodify/internal/user/type"
+	"github.com/google/uuid"
 
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/bcrypt"
@@ -99,6 +100,81 @@ func TestLogin(t *testing.T) {
 					errors.Is(tt.expectError, user_errors.ErrUserNotFound) {
 					assert.ErrorIs(t, err, tt.expectError)
 				}
+			}
+
+			mockRepo.AssertExpectations(t)
+		})
+	}
+}
+
+func TestResetPassword(t *testing.T) {
+
+	userPublicID := uuid.New()
+
+	resetReq := auth_types.ResetPasswordRequest{
+		OldPasswordHash: "old-hash",
+		NewPassword:     "new-password",
+	}
+
+	tests := []struct {
+		name                string
+		mockUserReturn      *user_types.GetUserResponse
+		mockGetUserError    error
+		mockUpdatePassError error
+		expectError         error
+	}{
+		{
+			name: "success",
+			mockUserReturn: &user_types.GetUserResponse{
+				ID: 1,
+			},
+			mockGetUserError:    nil,
+			mockUpdatePassError: nil,
+			expectError:         nil,
+		},
+		{
+			name:                "get user error",
+			mockUserReturn:      nil,
+			mockGetUserError:    user_errors.ErrUserNotFound,
+			mockUpdatePassError: nil,
+			expectError:         user_errors.ErrUserNotFound,
+		},
+		{
+			name: "update password error",
+			mockUserReturn: &user_types.GetUserResponse{
+				ID: 1,
+			},
+			mockGetUserError:    nil,
+			mockUpdatePassError: user_errors.ErrSamePassword,
+			expectError:         user_errors.ErrSamePassword,
+		},
+	}
+
+	for _, tt := range tests {
+
+		t.Run(tt.name, func(t *testing.T) {
+
+			mockRepo := new(user_mock.MockUserRepository)
+
+			mockRepo.
+				On("GetUserByPublicID", userPublicID).
+				Return(tt.mockUserReturn, tt.mockGetUserError)
+
+			if tt.mockGetUserError == nil {
+				mockRepo.
+					On("UpdateUserPassword", tt.mockUserReturn.ID, resetReq).
+					Return(tt.mockUpdatePassError)
+			}
+
+			service := NewAuthService(mockRepo)
+
+			err := service.ResetPassword(userPublicID, resetReq)
+
+			if tt.expectError == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+				assert.ErrorIs(t, err, tt.expectError)
 			}
 
 			mockRepo.AssertExpectations(t)

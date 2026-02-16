@@ -8,11 +8,13 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	auth_types "github.com/celio001/prodify/internal/auth/types"
 	user_errors "github.com/celio001/prodify/internal/user/errors"
 	user_types "github.com/celio001/prodify/internal/user/type"
 	"github.com/celio001/prodify/pkg/logger"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func TestGetUserByPublicID(t *testing.T) {
@@ -380,3 +382,84 @@ func TestUpdateUser(t *testing.T) {
 	}
 }
 
+func TestUpdateUserPassword(t *testing.T) {
+	logger.Init("dev")
+
+	tests := []struct {
+		name           string
+		oldPassword    string
+		newPassword    string
+		mockExecError  error
+		expectError    error
+		expectExecCall bool
+	}{
+		{
+			name:           "success",
+			oldPassword:    "123456",
+			newPassword:    "654321",
+			mockExecError:  nil,
+			expectError:    nil,
+			expectExecCall: true,
+		},
+		{
+			name:           "same password",
+			oldPassword:    "123456",
+			newPassword:    "123456",
+			mockExecError:  nil,
+			expectError:    user_errors.ErrSamePassword,
+			expectExecCall: false,
+		},
+		{
+			name:           "database error",
+			oldPassword:    "123456",
+			newPassword:    "654321",
+			mockExecError:  fmt.Errorf("db error"),
+			expectError:    fmt.Errorf("db error"),
+			expectExecCall: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			db, mock, err := sqlmock.New()
+			assert.NoError(t, err)
+			defer db.Close()
+
+			repo := NewUserRepository(db)
+
+			userID := int64(1)
+
+			hashedOldPassword, err := bcrypt.GenerateFromPassword([]byte(tt.oldPassword), bcrypt.DefaultCost)
+			assert.NoError(t, err)
+
+			resetReq := auth_types.ResetPasswordRequest{
+				OldPasswordHash: string(hashedOldPassword),
+				NewPassword:     tt.newPassword,
+			}
+
+			if tt.expectExecCall {
+				expect := mock.ExpectExec(regexp.QuoteMeta(updateUserPasswordQuery)).
+					WithArgs(userID, sqlmock.AnyArg())
+
+				if tt.mockExecError != nil {
+					expect.WillReturnError(tt.mockExecError)
+				} else {
+					expect.WillReturnResult(sqlmock.NewResult(0, 1))
+				}
+			}
+
+			err = repo.UpdateUserPassword(userID, resetReq)
+
+			if tt.expectError == nil {
+				assert.NoError(t, err)
+			} else if tt.expectError == user_errors.ErrSamePassword {
+				assert.ErrorIs(t, err, user_errors.ErrSamePassword)
+			} else {
+				assert.Error(t, err)
+			}
+
+			assert.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}

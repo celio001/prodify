@@ -39,7 +39,7 @@ func setupTestAppWithUser(service auth_service.AuthService, userID string) *fibe
 		authService: service,
 	}
 
-	app.Post("/reset-password", func(c *fiber.Ctx) error {
+	app.Patch("/reset-password", func(c *fiber.Ctx) error {
 		c.Locals("user_id", userID)
 		return handler.AuthResetPasswordHandler(c)
 	})
@@ -202,7 +202,7 @@ func TestAuthResetPasswordHandler_Success(t *testing.T) {
 		"new_password":"654321"
 	}`
 
-	req := httptest.NewRequest(http.MethodPost, "/reset-password", strings.NewReader(body))
+	req := httptest.NewRequest(http.MethodPatch, "/reset-password", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := app.Test(req)
@@ -224,7 +224,7 @@ func TestAuthResetPasswordHandler_UserNotAuthenticated(t *testing.T) {
 		authService: mockService,
 	}
 
-	app.Post("/reset-password", func(c *fiber.Ctx) error {
+	app.Patch("/reset-password", func(c *fiber.Ctx) error {
 		return handler.AuthResetPasswordHandler(c)
 	})
 
@@ -233,7 +233,7 @@ func TestAuthResetPasswordHandler_UserNotAuthenticated(t *testing.T) {
 		"new_password":"654321"
 	}`
 
-	req := httptest.NewRequest(http.MethodPost, "/reset-password", strings.NewReader(body))
+	req := httptest.NewRequest(http.MethodPatch, "/reset-password", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := app.Test(req)
@@ -255,7 +255,7 @@ func TestAuthResetPasswordHandler_InvalidUUID(t *testing.T) {
 		"new_password":"654321"
 	}`
 
-	req := httptest.NewRequest(http.MethodPost, "/reset-password", strings.NewReader(body))
+	req := httptest.NewRequest(http.MethodPatch, "/reset-password", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := app.Test(req)
@@ -276,7 +276,7 @@ func TestAuthResetPasswordHandler_InvalidJSON(t *testing.T) {
 
 	body := `invalid-json`
 
-	req := httptest.NewRequest(http.MethodPost, "/reset-password", strings.NewReader(body))
+	req := httptest.NewRequest(http.MethodPatch, "/reset-password", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := app.Test(req)
@@ -299,7 +299,7 @@ func TestAuthResetPasswordHandler_ValidationError(t *testing.T) {
 		"old_password_hash":"123456"
 	}`
 
-	req := httptest.NewRequest(http.MethodPost, "/reset-password", strings.NewReader(body))
+	req := httptest.NewRequest(http.MethodPatch, "/reset-password", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := app.Test(req)
@@ -327,7 +327,7 @@ func TestAuthResetPasswordHandler_SamePassword(t *testing.T) {
 		"new_password":"123456"
 	}`
 
-	req := httptest.NewRequest(http.MethodPost, "/reset-password", strings.NewReader(body))
+	req := httptest.NewRequest(http.MethodPatch, "/reset-password", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := app.Test(req)
@@ -355,7 +355,7 @@ func TestAuthResetPasswordHandler_UserNotFound(t *testing.T) {
 		"new_password":"654321"
 	}`
 
-	req := httptest.NewRequest(http.MethodPost, "/reset-password", strings.NewReader(body))
+	req := httptest.NewRequest(http.MethodPatch, "/reset-password", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := app.Test(req)
@@ -383,7 +383,7 @@ func TestAuthResetPasswordHandler_InvalidOldPassword(t *testing.T) {
 		"new_password":"654321"
 	}`
 
-	req := httptest.NewRequest(http.MethodPost, "/reset-password", strings.NewReader(body))
+	req := httptest.NewRequest(http.MethodPatch, "/reset-password", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := app.Test(req)
@@ -411,7 +411,7 @@ func TestAuthResetPasswordHandler_InternalError(t *testing.T) {
 		"new_password":"654321"
 	}`
 
-	req := httptest.NewRequest(http.MethodPost, "/reset-password", strings.NewReader(body))
+	req := httptest.NewRequest(http.MethodPatch, "/reset-password", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := app.Test(req)
