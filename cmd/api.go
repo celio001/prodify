@@ -3,7 +3,10 @@ package cmd
 import (
 	"os"
 
+	auth_service "github.com/celio001/prodify/internal/auth/service"
 	"github.com/celio001/prodify/internal/fiber"
+	user_repository "github.com/celio001/prodify/internal/user/repository"
+	user_service "github.com/celio001/prodify/internal/user/service"
 	"github.com/celio001/prodify/pkg/lifecycle"
 	"github.com/celio001/prodify/pkg/logger"
 	"github.com/celio001/prodify/pkg/postgress"
@@ -42,7 +45,11 @@ func ApiExecute(cmd *cobra.Command, args []string) error {
 
 	productRepository := product.NewRepository(connPostgres)
 
-	s := fiber.CreateServer(productRepository)
+	userRepository := user_repository.NewUserRepository(connPostgres)
+	userSvc := user_service.NewUserService(userRepository)
+	authService := auth_service.NewAuthService(userRepository)
+
+	s := fiber.CreateServer(productRepository, authService, userSvc)
 
 	lifecycle.New(cmd.Context(), "product-api", s.Start, s.Stop)
 
