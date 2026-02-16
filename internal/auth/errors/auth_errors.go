@@ -25,3 +25,20 @@ func LoginValidateError(err error) map[string]string {
 	}
 	return errors
 }
+
+func ResetPasswordValidateError(err error) map[string]string {
+	errors := make(map[string]string)
+
+	if validationErrs, ok := err.(validator.ValidationErrors); ok {
+		for _, fieldErr := range validationErrs {
+			field := fieldErr.Field()
+			switch field{
+			case "OldPassword":
+				errors[field] = "Old password is required"
+			case "NewPassword":
+				errors[field] = "New password is required"
+			}
+		}
+	}
+	return errors
+}

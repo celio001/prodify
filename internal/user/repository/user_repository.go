@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	auth_types "github.com/celio001/prodify/internal/auth/types"
 	user_errors "github.com/celio001/prodify/internal/user/errors"
 	user_types "github.com/celio001/prodify/internal/user/type"
 	"github.com/celio001/prodify/pkg/logger"
@@ -37,6 +38,12 @@ const (
 		email = COALESCE($4, email),
 		updated_at = now()
 	WHERE user_id = $1;`
+
+	updateUserPasswordQuery = `UPDATE users
+	SET
+	password_hash = $2,
+	updated_at = now()
+	WHERE user_id = $1;`
 )
 
 type userRepository struct {
@@ -49,6 +56,7 @@ type UserRepository interface {
 	CreateUser(user user_types.CreateUserRequest) error
 	SoftDeleteUser(user_id int64) error
 	UpdateUser(user_id int64, user_params user_types.UpdateUserRequest) error
+	UpdateUserPassword(user_id int64, resetPasswordRequest auth_types.ResetPasswordRequest) error
 }
 
 func NewUserRepository(Db *sql.DB) UserRepository {
@@ -148,3 +156,28 @@ func (r *userRepository) UpdateUser(user_id int64, user_params user_types.Update
 
 	return nil
 }
+
+func (r *userRepository) UpdateUserPassword(user_id int64, resetPasswordRequest auth_types.ResetPasswordRequest) error {
+	ctx := context.Background()
+
+	err := bcrypt.CompareHashAndPassword([]byte(resetPasswordRequest.OldPasswordHash), []byte(resetPasswordRequest.NewPassword))
+	if err == nil { 
+		logger.Log.Error("new password cannot be the same as the old password")
+		return user_errors.ErrSamePassword
+	}
+
+	passwordEncrypted, err := bcrypt.GenerateFromPassword([]byte(resetPasswordRequest.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		logger.Log.Error("error encrypting password", zap.String("error", err.Error()))
+		return fmt.Errorf("%w: %v", user_errors.ErrUserCreationFailed, err)
+	}
+
+	_, err = r.Db.ExecContext(ctx, updateUserPasswordQuery, user_id, passwordEncrypted)
+	if err != nil {
+		logger.Log.Error("error updating user password", zap.String("error", err.Error()))
+		return err
+	}
+	return nil
+}
+
+

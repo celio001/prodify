@@ -1,10 +1,11 @@
 package auth_service
 
 import (
-	auth_types "github.com/celio001/prodify/internal/auth/types"
 	auth_errors "github.com/celio001/prodify/internal/auth/errors"
+	auth_types "github.com/celio001/prodify/internal/auth/types"
 	user_repository "github.com/celio001/prodify/internal/user/repository"
 	user_types "github.com/celio001/prodify/internal/user/type"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -14,6 +15,7 @@ type authService struct {
 
 type AuthService interface {
 	Login(loginRequest auth_types.LoginRequest) (user_types.GetUserResponse, error)
+	ResetPassword(userPublicID uuid.UUID, resetPasswordRequest auth_types.ResetPasswordRequest) error
 }
 
 func NewAuthService(userRepo user_repository.UserRepository) AuthService {
@@ -33,4 +35,18 @@ func (s *authService) Login(loginRequest auth_types.LoginRequest) (user_types.Ge
 	}
 
 	return *user, nil
+}
+
+func (s *authService) ResetPassword(userPublicID uuid.UUID, resetPasswordRequest auth_types.ResetPasswordRequest) error {
+	user, err := s.userRepo.GetUserByPublicID(userPublicID)
+	if err != nil {
+		return err
+	}
+
+	err = s.userRepo.UpdateUserPassword(user.ID, resetPasswordRequest)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

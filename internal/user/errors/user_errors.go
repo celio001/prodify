@@ -9,6 +9,7 @@ import (
 var (
 	ErrUserNotFound       = errors.New("user not found")
 	ErrUserCreationFailed = errors.New("failed to create user")
+	ErrSamePassword       = errors.New("new password cannot be the same as the old password")
 )
 
 func CreateUserValidateError(err error) map[string]string {

@@ -1,6 +1,7 @@
 package user_repository_mock
 
 import (
+	auth_types "github.com/celio001/prodify/internal/auth/types"
 	user_types "github.com/celio001/prodify/internal/user/type"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
@@ -42,5 +43,10 @@ func (m *MockUserRepository) SoftDeleteUser(userID int64) error {
 
 func (m *MockUserRepository) UpdateUser(userID int64, params user_types.UpdateUserRequest) error {
 	args := m.Called(userID, params)
+	return args.Error(0)
+}
+
+func (m *MockUserRepository) UpdateUserPassword(userID int64, resetPasswordRequest auth_types.ResetPasswordRequest) error {
+	args := m.Called(userID, resetPasswordRequest)
 	return args.Error(0)
 }
