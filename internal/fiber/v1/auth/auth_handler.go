@@ -34,7 +34,8 @@ func (h *authHandler) AuthLoginHandler(ctx *fiber.Ctx) error {
 	var loginRequest auth_types.LoginRequest
 
 	if err := pkg_request.LimitBodyJSON(ctx, maxBodySize, &loginRequest); err != nil {
-		return err
+		return ctx.Status(fiber.StatusBadRequest).
+		JSON(fiber.Map{"error": err.Error()})
 	}
 
 	if err := validate.Struct(loginRequest); err != nil {
