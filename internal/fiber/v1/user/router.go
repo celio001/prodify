@@ -16,5 +16,4 @@ func RegisterRouter(router fiber.Router, userService user_service.UserService) {
 	router.Get("/", middleware.AuthMiddleware(), userHandler.GetUserByPublicIDHandler)
 	router.Patch("/", middleware.AuthMiddleware(), userHandler.UpdateUserHandler)
 	router.Delete("/", middleware.AuthMiddleware(), userHandler.DeleteUserHandler)
-	router.Post("/", middleware.AuthMiddleware(), userHandler.CreateUserHandler)
 }

@@ -18,7 +18,6 @@ type UserHandler interface {
 	GetUserByPublicIDHandler(c *fiber.Ctx) error
 	UpdateUserHandler(c *fiber.Ctx) error
 	DeleteUserHandler(c *fiber.Ctx) error
-	CreateUserHandler(c *fiber.Ctx) error
 }
 
 type userHandler struct {
@@ -46,10 +45,10 @@ var validate = validator.New()
 func (h *userHandler) GetUserByPublicIDHandler(c *fiber.Ctx) error {
 
 	userID := c.Locals("user_id")
-	if userID == nil {
-		return c.Status(fiber.StatusUnauthorized).
-			JSON(fiber.Map{"error": "user not authenticated"})
-	}
+		if userID == nil {
+			return c.Status(fiber.StatusUnauthorized).
+				JSON(fiber.Map{"error": "user not authenticated"})
+		}
 
 	id, err := uuidvalidator.ValidateUuid(userID.(string))
 	if err != nil {
@@ -75,40 +74,6 @@ func (h *userHandler) GetUserByPublicIDHandler(c *fiber.Ctx) error {
 			"message": "user loaded successfully",
 			"data":    user,
 		})
-}
-
-// @Summary Create user
-// @Description Creates a new user account
-// @Tags user
-// @Accept json
-// @Produce json
-// @Param request body user_types.CreateUserRequest true "User creation payload"
-// @Success 201 {object} map[string]string "User created successfully"
-// @Failure 400 {object} map[string]interface{} "Invalid request body or validation error"
-// @Failure 500 {object} map[string]string "Internal server error"
-// @Router /v1/user [post]
-func (h *userHandler) CreateUserHandler(c *fiber.Ctx) error {
-
-	var req user_types.CreateUserRequest
-
-	if err := pkg_request.LimitBodyJSON(c, maxBodySize, &req); err != nil {
-		return c.Status(fiber.StatusBadRequest).
-			JSON(fiber.Map{"error": err.Error()})
-	}
-
-	if err := validate.Struct(req); err != nil {
-		logger.Log.Error("invalid create user payload", zap.Error(err))
-		return c.Status(fiber.StatusBadRequest).
-			JSON(fiber.Map{"error": user_errors.CreateUserValidateError(err)})
-	}
-
-	if err := h.userService.CreateUser(req); err != nil {
-		return c.Status(fiber.StatusInternalServerError).
-			JSON(fiber.Map{"error": "INTERNAL_ERROR"})
-	}
-
-	return c.Status(fiber.StatusCreated).
-		JSON(fiber.Map{"message": "user created successfully"})
 }
 
 // @Summary Update authenticated user
