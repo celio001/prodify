@@ -29,7 +29,10 @@ func (m *MockUserService) UpdateUser(publicID uuid.UUID, params user_types.Updat
 	return args.Error(0)
 }
 
-func (m *MockUserService) CreateUser(user user_types.CreateUserRequest) error {
+func (m *MockUserService) CreateUser(user user_types.CreateUserRequest) (*user_types.CreateUserResponse, error) {
 	args := m.Called(user)
-	return args.Error(0)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*user_types.CreateUserResponse), args.Error(1)
 }

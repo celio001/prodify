@@ -53,7 +53,7 @@ type userRepository struct {
 type UserRepository interface {
 	GetUserByPublicID(publicId uuid.UUID) (*user_types.GetUserResponse, error)
 	GetUserByEmail(email string) (*user_types.GetUserResponse, error)
-	CreateUser(user user_types.CreateUserRequest) error
+	CreateUser(user user_types.CreateUserRequest) (*user_types.CreateUserResponse, error)
 	SoftDeleteUser(user_id int64) error
 	UpdateUser(user_id int64, user_params user_types.UpdateUserRequest) error
 	UpdateUserPassword(user_id int64, resetPasswordRequest auth_types.ResetPasswordRequest) error
@@ -117,20 +117,35 @@ func (r *userRepository) GetUserByEmail(email string) (*user_types.GetUserRespon
 	return &user, nil
 }
 
-func (r *userRepository) CreateUser(user user_types.CreateUserRequest) error {
+func (r *userRepository) CreateUser(user user_types.CreateUserRequest) (*user_types.CreateUserResponse, error) {
 	ctx := context.Background()
 
 	passwordEncrypted, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		logger.Log.Error("error encrypted password", zap.String("error", err.Error()))
-		return fmt.Errorf("%w: %v", user_errors.ErrUserCreationFailed, err)
+		return nil, fmt.Errorf("%w: %v", user_errors.ErrUserCreationFailed, err)
 	}
 
-	_, err = r.Db.ExecContext(ctx, createUserQuery, user.Name, user.Email, passwordEncrypted, user.IsActive)
+	row, err := r.Db.QueryContext(ctx, createUserQuery, user.Name, user.Email, passwordEncrypted, true)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	defer row.Close()
+
+	var u user_types.CreateUserResponse
+
+	err = row.Scan(
+		&u.Id,
+		&u.PublicID,
+		&u.Name,
+		&u.Email,
+		&u.PasswordHash,
+		&u.IsActive,
+		&u.CreatedAt,
+		&u.UpdatedAt,
+	)
+
+	return &u, nil
 }
 
 func (r *userRepository) SoftDeleteUser(user_id int64) error {

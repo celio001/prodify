@@ -20,7 +20,6 @@ type UserService interface {
 	GetUserByPublicID(publicID uuid.UUID) (*user_types.GetUserResponse, error)
 	SoftDeleteUser(publicID uuid.UUID) error
 	UpdateUser(publicID uuid.UUID, params user_types.UpdateUserRequest) error
-	CreateUser(user user_types.CreateUserRequest) error
 }
 
 func NewUserService(userRepo user_repository.UserRepository) UserService {
@@ -56,15 +55,6 @@ func (s *userService) UpdateUser(publicID uuid.UUID, params user_types.UpdateUse
 	}
 
 	err = s.userRepo.UpdateUser(user.ID, params)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (s *userService) CreateUser(user user_types.CreateUserRequest) error {
-	err := s.userRepo.CreateUser(user)
 	if err != nil {
 		return err
 	}

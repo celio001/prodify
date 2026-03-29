@@ -31,9 +31,9 @@ func (m *MockUserRepository) GetUserByEmail(email string) (*user_types.GetUserRe
 	return args.Get(0).(*user_types.GetUserResponse), args.Error(1)
 }
 
-func (m *MockUserRepository) CreateUser(user user_types.CreateUserRequest) error {
+func (m *MockUserRepository) CreateUser(user user_types.CreateUserRequest) (*user_types.CreateUserResponse, error) {
 	args := m.Called(user)
-	return args.Error(0)
+	return args.Get(0).(*user_types.CreateUserResponse), args.Error(1)
 }
 
 func (m *MockUserRepository) SoftDeleteUser(userID int64) error {

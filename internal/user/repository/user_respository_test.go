@@ -197,12 +197,13 @@ func TestGetUserByEmail(t *testing.T) {
 func TestCreateUser(t *testing.T) {
 	logger.Init("dev")
 
+	now := time.Now()
+
 	tests := []struct {
-		name          string
-		user          user_types.CreateUserRequest
-		mockExecError error
-		expectError   bool
-		expectWrapErr bool
+		name        string
+		user        user_types.CreateUserRequest
+		mockError   error
+		expectError bool
 	}{
 		{
 			name: "success",
@@ -210,10 +211,9 @@ func TestCreateUser(t *testing.T) {
 				Name:     "Célio",
 				Email:    "celio@email.com",
 				Password: "123456",
-				IsActive: true,
 			},
-			mockExecError: nil,
-			expectError:   false,
+			mockError:   nil,
+			expectError: false,
 		},
 		{
 			name: "database error",
@@ -221,10 +221,9 @@ func TestCreateUser(t *testing.T) {
 				Name:     "Célio",
 				Email:    "celio@email.com",
 				Password: "123456",
-				IsActive: true,
 			},
-			mockExecError: fmt.Errorf("db error"),
-			expectError:   true,
+			mockError:   fmt.Errorf("db error"),
+			expectError: true,
 		},
 	}
 
@@ -237,32 +236,51 @@ func TestCreateUser(t *testing.T) {
 
 			repo := NewUserRepository(db)
 
-			if tt.mockExecError != nil {
-				mock.ExpectExec(regexp.QuoteMeta(createUserQuery)).
+			if tt.mockError != nil {
+				mock.ExpectQuery(regexp.QuoteMeta(createUserQuery)).
 					WithArgs(
 						tt.user.Name,
 						tt.user.Email,
 						sqlmock.AnyArg(),
-						tt.user.IsActive,
+						true,
 					).
-					WillReturnError(tt.mockExecError)
+					WillReturnError(tt.mockError)
 			} else {
-				mock.ExpectExec(regexp.QuoteMeta(createUserQuery)).
+				hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(tt.user.Password), bcrypt.DefaultCost)
+				mockRows := sqlmock.NewRows([]string{
+					"id",
+					"public_id",
+					"name",
+					"email",
+					"password_hash",
+					"created_at",
+					"updated_at",
+				}).AddRow(
+					1,
+					uuid.New(),
+					tt.user.Name,
+					tt.user.Email,
+					string(hashedPassword),
+					now,
+					now,
+				)
+				mock.ExpectQuery(regexp.QuoteMeta(createUserQuery)).
 					WithArgs(
 						tt.user.Name,
 						tt.user.Email,
 						sqlmock.AnyArg(),
-						tt.user.IsActive,
+						true,
 					).
-					WillReturnResult(sqlmock.NewResult(1, 1))
+					WillReturnRows(mockRows)
 			}
 
-			err = repo.CreateUser(tt.user)
+			u, err := repo.CreateUser(tt.user)
 
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
+				assert.NotNil(t, u)
 			}
 
 			assert.NoError(t, mock.ExpectationsWereMet())
