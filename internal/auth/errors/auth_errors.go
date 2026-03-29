@@ -15,11 +15,54 @@ func LoginValidateError(err error) map[string]string {
 	if validationErrs, ok := err.(validator.ValidationErrors); ok {
 		for _, fieldErr := range validationErrs {
 			field := fieldErr.Field()
+			tag := fieldErr.Tag()
+
 			switch field{
 			case "Email":
-				errors[field] = "Email is required"
+				switch tag {
+				case "required":
+					errors[field] = "Email is required"
+				case "email":
+					errors[field] = "Invalid email format"
+				}
+
 			case "Password":
-				errors[field] = "Password is required"
+				switch tag {
+				case "required":
+					errors[field] = "Password is required"
+				}
+			}
+		}
+	}
+	return errors
+}
+
+func RegisterValidateError(err error) map[string]string {
+	errors := make(map[string]string)
+	if validationErrs, ok := err.(validator.ValidationErrors); ok {
+		for _, fieldErr := range validationErrs {
+			field := fieldErr.Field()
+			tag := fieldErr.Tag()
+			switch field {
+			case "Name":
+				switch tag {
+				case "required":
+					errors[field] = "Name is required"
+				case "min":
+					errors[field] = "Name must be at least 3 characters"
+				}
+			case "Email":
+				switch tag {
+				case "required":
+					errors[field] = "Email is required"
+				case "email":
+					errors[field] = "Invalid email format"
+				}
+			case "Password":
+				switch tag {
+				case "required":
+					errors[field] = "Password is required"
+				}
 			}
 		}
 	}

@@ -15,6 +15,7 @@ type authService struct {
 
 type AuthService interface {
 	Login(loginRequest auth_types.LoginRequest) (user_types.GetUserResponse, error)
+	RegisterUser(user auth_types.CreateUserRequest) (*auth_types.CreateUserResponse, error)
 	ResetPassword(userPublicID uuid.UUID, resetPasswordRequest auth_types.ResetPasswordRequest) error
 }
 
@@ -49,4 +50,28 @@ func (s *authService) ResetPassword(userPublicID uuid.UUID, resetPasswordRequest
 	}
 
 	return nil
+}
+
+func (s *authService) RegisterUser(user auth_types.CreateUserRequest) (*auth_types.CreateUserResponse, error) {
+
+	u := user_types.CreateUserRequest{
+		Name:     user.Name,
+		Email:    user.Email,
+		Password: user.Password,
+	}
+
+	userRepo, err := s.userRepo.CreateUser(u)
+	if err != nil {
+		return &auth_types.CreateUserResponse{}, err
+	}
+	return &auth_types.CreateUserResponse{
+		Id:           userRepo.Id,
+		PublicID:     userRepo.PublicID.String(),
+		Name:         userRepo.Name,
+		Email:        userRepo.Email,
+		PasswordHash: userRepo.PasswordHash,
+		IsActive:     userRepo.IsActive,
+		CreatedAt:    userRepo.CreatedAt,
+		UpdatedAt:    userRepo.UpdatedAt,
+	}, nil
 }

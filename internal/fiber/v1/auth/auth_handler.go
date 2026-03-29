@@ -20,6 +20,7 @@ type authHandler struct {
 
 type AuthHandler interface {
 	AuthLoginHandler(ctx *fiber.Ctx) error
+	RegisterUserHandler(ctx *fiber.Ctx) error
 }
 
 func NewAuthHandler(authService auth_service.AuthService) *authHandler {
@@ -30,7 +31,6 @@ func NewAuthHandler(authService auth_service.AuthService) *authHandler {
 
 const maxBodySize = 1 << 20 // 1MB
 var validate = validator.New()
-
 
 // @Summary User login
 // @Description Authenticates a user using email and password and returns a JWT access token
@@ -71,13 +71,67 @@ func (h *authHandler) AuthLoginHandler(ctx *fiber.Ctx) error {
 
 	}
 
-	access, err := pkg_jwt.CreateAccessToken(user.PublicID)
+	token, err := pkg_jwt.CreateAccessToken(user.PublicID)
 	if err != nil {
 		logger.Log.Error("failed to create access token", zap.String("error", err.Error()))
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create access token"})
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{"access_token": access})
+	refresh_token, err := pkg_jwt.CreateRefreshToken(user.PublicID)
+	if err != nil {
+		logger.Log.Error("failed to create refresh token", zap.String("error", err.Error()))
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create refresh token"})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+		"access_token":  token,
+		"refresh_token": refresh_token,
+		"token_type":    "Bearer",
+	})
+}
+
+func (h *authHandler) RegisterUserHandler(ctx *fiber.Ctx) error {
+	var createUserRequest auth_types.CreateUserRequest
+
+	if err := pkg_request.LimitBodyJSON(ctx, maxBodySize, &createUserRequest); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": err.Error()})
+	}
+
+	if err := validate.Struct(createUserRequest); err != nil {
+		logger.Log.Error("invalid create user payload", zap.String("error", err.Error()))
+		return ctx.Status(fiber.StatusBadRequest).
+			JSON(fiber.Map{"error": auth_errors.RegisterValidateError(err)})
+	}
+
+	user, err := h.authService.RegisterUser(createUserRequest)
+	if err != nil {
+		switch err {
+		case user_errors.ErrUserCreationFailed:
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		default:
+			logger.Log.Error("failed to register user", zap.String("error", err.Error()))
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to register user"})
+		}
+	}
+
+	token, err := pkg_jwt.CreateAccessToken(user.PublicID)
+	if err != nil {
+		logger.Log.Error("failed to create access token", zap.String("error", err.Error()))
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create access token"})
+	}
+
+	refresh_token, err := pkg_jwt.CreateRefreshToken(user.PublicID)
+	if err != nil {
+		logger.Log.Error("failed to create refresh token", zap.String("error", err.Error()))
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create refresh token"})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(fiber.Map{
+		"access_token":  token,
+		"refresh_token": refresh_token,
+		"token_type":    "Bearer",
+	})
 }
 
 // @Summary Reset user password
@@ -91,7 +145,7 @@ func (h *authHandler) AuthLoginHandler(ctx *fiber.Ctx) error {
 // @Failure 400 {object} map[string]interface{} "Invalid request body, validation error or invalid user ID"
 // @Failure 401 {object} map[string]string "User not authenticated or business rule violation"
 // @Failure 500 {object} map[string]string "Internal server error"
-// @Router /v1/auth/reset-password [post]
+// @Router /v1/auth/reset-password [patch]
 func (h *authHandler) AuthResetPasswordHandler(ctx *fiber.Ctx) error {
 	var resetPasswordRequest auth_types.ResetPasswordRequest
 

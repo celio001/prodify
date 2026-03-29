@@ -17,6 +17,14 @@ func (m *MockAuthService) Login(req auth_types.LoginRequest) (user_types.GetUser
 	return args.Get(0).(user_types.GetUserResponse), args.Error(1)
 }
 
+func (m *MockAuthService) RegisterUser(user auth_types.CreateUserRequest) (*auth_types.CreateUserResponse, error) {
+	args := m.Called(user)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*auth_types.CreateUserResponse), args.Error(1)
+}
+
 func (m *MockAuthService) ResetPassword(userPublicID uuid.UUID, resetPasswordRequest auth_types.ResetPasswordRequest) error {
 	args := m.Called(userPublicID, resetPasswordRequest)
 	return args.Error(0)
