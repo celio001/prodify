@@ -28,6 +28,19 @@ func CreateAccessToken(userID string) (string, error) {
 	return token.SignedString([]byte(config.GetString("JWT_SECRET")))
 }
 
+// CreateRefreshToken - Big token (7 days)
+func CreateRefreshToken(userID string) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
+		jwt.MapClaims{
+			"user_id": userID,
+			"exp":     time.Now().Add(7 * 24 * time.Hour).Unix(),
+			"iat":     time.Now().Unix(),
+			"type":    "refresh",
+		})
+
+	return token.SignedString([]byte(config.GetString("JWT_SECRET")))
+}
+
 func ParseToken(tokenString string) (*jwt.Token, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return []byte(config.GetString("JWT_SECRET")), nil
