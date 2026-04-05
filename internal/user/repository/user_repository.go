@@ -15,12 +15,12 @@ import (
 )
 
 const (
-	getUserByPublicIDQuery = `SELECT id, public_id, name, email, password_hash, role, isActive, created_at, updated_at 
+	getUserByPublicIDQuery = `SELECT id, public_id, name, email, password_hash, is_active, created_at, updated_at 
 	FROM users 
 	WHERE public_id = $1
 	AND deleted_at IS NULL`
 
-	getUserByEmailQuery = `SELECT public_id, name, email, password_hash, role, isActive, created_at, updated_at 
+	getUserByEmailQuery = `SELECT public_id, name, email, password_hash, is_active, created_at, updated_at 
 	FROM users 
 	WHERE email = $1
 	AND deleted_at IS NULL`
@@ -77,7 +77,6 @@ func (r *userRepository) GetUserByPublicID(publicId uuid.UUID) (*user_types.GetU
 		&user.Name,
 		&user.Email,
 		&user.PasswordHash,
-		&user.Role,
 		&user.IsActive,
 		&user.CreatedAt,
 		&user.UpdatedAt)
@@ -102,7 +101,6 @@ func (r *userRepository) GetUserByEmail(email string) (*user_types.GetUserRespon
 		&user.Name,
 		&user.Email,
 		&user.PasswordHash,
-		&user.Role,
 		&user.IsActive,
 		&user.CreatedAt,
 		&user.UpdatedAt)
@@ -176,7 +174,7 @@ func (r *userRepository) UpdateUserPassword(user_id int64, resetPasswordRequest 
 	ctx := context.Background()
 
 	err := bcrypt.CompareHashAndPassword([]byte(resetPasswordRequest.OldPasswordHash), []byte(resetPasswordRequest.NewPassword))
-	if err == nil { 
+	if err == nil {
 		logger.Log.Error("new password cannot be the same as the old password")
 		return user_errors.ErrSamePassword
 	}
@@ -194,5 +192,3 @@ func (r *userRepository) UpdateUserPassword(user_id int64, resetPasswordRequest 
 	}
 	return nil
 }
-
-
