@@ -17,7 +17,7 @@ import (
 
 var (
 	httpCommand = &cobra.Command{
-		Use:   "http",
+		Use:   "web",
 		Short: "Initializes the codebase running as http server",
 		Long:  "Initializes the codebase running as http server",
 		RunE:  ApiExecute,
@@ -38,10 +38,10 @@ func ApiExecute(cmd *cobra.Command, args []string) error {
 	defer logger.Log.Sync()
 
 	connPostgres, err := postgress.NewInstance()
-
 	if err != nil {
 		logger.Log.Fatal("failed to connect to Postgres", zap.String("error", err.Error()))
 	}
+	defer connPostgres.Close()
 
 	productRepository := product.NewRepository(connPostgres)
 
