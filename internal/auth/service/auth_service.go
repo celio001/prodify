@@ -60,6 +60,13 @@ func (s *authService) RegisterUser(user auth_types.CreateUserRequest) (*auth_typ
 		Password: user.Password,
 	}
 
+	userExists, err := s.userRepo.GetUserByEmail(user.Email)
+	if userExists != nil {
+		return &auth_types.CreateUserResponse{}, auth_errors.ErrUserAlreadyExists
+	}else if err != nil {
+		return &auth_types.CreateUserResponse{}, err
+	}
+
 	userRepo, err := s.userRepo.CreateUser(u)
 	if err != nil {
 		return &auth_types.CreateUserResponse{}, err

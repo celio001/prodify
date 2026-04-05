@@ -90,6 +90,16 @@ func (h *authHandler) AuthLoginHandler(ctx *fiber.Ctx) error {
 	})
 }
 
+// @Summary Register a new user
+// @Description Registers a new user with the provided name, email, and password, and returns a JWT access token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body auth_types.CreateUserRequest true "Create user payload"
+// @Success 200 {object} map[string]string "User registered successfully with access token"
+// @Failure 400 {object} map[string]interface{} "Invalid request body, validation error, or user creation failure"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /v1/auth/register [post]
 func (h *authHandler) RegisterUserHandler(ctx *fiber.Ctx) error {
 	var createUserRequest auth_types.CreateUserRequest
 
@@ -108,6 +118,8 @@ func (h *authHandler) RegisterUserHandler(ctx *fiber.Ctx) error {
 	if err != nil {
 		switch err {
 		case user_errors.ErrUserCreationFailed:
+			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		case auth_errors.ErrUserAlreadyExists:
 			return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		default:
 			logger.Log.Error("failed to register user", zap.String("error", err.Error()))

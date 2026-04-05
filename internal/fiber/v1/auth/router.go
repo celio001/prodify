@@ -13,5 +13,6 @@ func RegisterRouter(router fiber.Router, authService auth_service.AuthService) {
 
 	handler := NewAuthHandler(authService)
 	router.Post("/login", handler.AuthLoginHandler)
-	router.Patch("/login/reset-password", handler.AuthResetPasswordHandler)
+	router.Post("/register", handler.RegisterUserHandler)
+	router.Patch("/reset-password", handler.AuthResetPasswordHandler)
 }

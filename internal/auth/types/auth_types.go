@@ -15,7 +15,7 @@ type ResetPasswordRequest struct {
 type CreateUserRequest struct {
 	Name     string `json:"name" validate:"required,min=3,max=50"`
 	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password_hash" validate:"required"`
+	Password string `json:"password" validate:"required"`
 }
 
 type CreateUserResponse struct {

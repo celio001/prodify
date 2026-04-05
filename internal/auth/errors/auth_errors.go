@@ -2,11 +2,13 @@ package auth_errors
 
 import (
 	"errors"
+
 	"github.com/go-playground/validator/v10"
 )
 
 var (
-	ErrMatchDataUser = errors.New("email or password incorrect")
+	ErrMatchDataUser     = errors.New("email or password incorrect")
+	ErrUserAlreadyExists = errors.New("user with this email already exists")
 )
 
 func LoginValidateError(err error) map[string]string {
@@ -17,7 +19,7 @@ func LoginValidateError(err error) map[string]string {
 			field := fieldErr.Field()
 			tag := fieldErr.Tag()
 
-			switch field{
+			switch field {
 			case "Email":
 				switch tag {
 				case "required":
@@ -75,7 +77,7 @@ func ResetPasswordValidateError(err error) map[string]string {
 	if validationErrs, ok := err.(validator.ValidationErrors); ok {
 		for _, fieldErr := range validationErrs {
 			field := fieldErr.Field()
-			switch field{
+			switch field {
 			case "OldPassword":
 				errors[field] = "Old password is required"
 			case "NewPassword":
