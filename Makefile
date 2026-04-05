@@ -14,7 +14,7 @@ server:
 	--misc.clean_on_exit true
 
 run:
-	$(GO_CMD) run cmd/api.go
+	$(GO_CMD) run main.go http
 
 build:
 	$(GO_CMD) build -o bin/$(APP_NAME) cmd/api.go
@@ -25,8 +25,9 @@ test:
 fmt:
 	$(GO_CMD) fmt ./...
 
-docs:
-	$(SWAG_CMD) init -g cmd/api.go -o internal/docs
+swagger:
+	$(GO_CMD) install github.com/swaggo/swag/cmd/swag@latest
+	$(SWAG_CMD) init -g ./internal/fiber/server.go -o ./docs/ --parseDependency
 
 migrate.diff:
 	$(ATLAS_CMD) migrate diff --env development
