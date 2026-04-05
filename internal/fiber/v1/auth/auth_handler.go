@@ -4,6 +4,7 @@ import (
 	auth_errors "github.com/celio001/prodify/internal/auth/errors"
 	auth_service "github.com/celio001/prodify/internal/auth/service"
 	auth_types "github.com/celio001/prodify/internal/auth/types"
+	"github.com/celio001/prodify/internal/fiber/middleware"
 	user_errors "github.com/celio001/prodify/internal/user/errors"
 	pkg_jwt "github.com/celio001/prodify/pkg/jwt"
 	"github.com/celio001/prodify/pkg/logger"
@@ -21,6 +22,7 @@ type authHandler struct {
 type AuthHandler interface {
 	AuthLoginHandler(ctx *fiber.Ctx) error
 	RegisterUserHandler(ctx *fiber.Ctx) error
+	AuthResetPasswordHandler(ctx *fiber.Ctx) error
 }
 
 func NewAuthHandler(authService auth_service.AuthService) *authHandler {
@@ -161,7 +163,7 @@ func (h *authHandler) RegisterUserHandler(ctx *fiber.Ctx) error {
 func (h *authHandler) AuthResetPasswordHandler(ctx *fiber.Ctx) error {
 	var resetPasswordRequest auth_types.ResetPasswordRequest
 
-	userID := ctx.Locals("user_id")
+	userID := ctx.Locals(middleware.UserIDKey)
 	if userID == nil {
 		return ctx.Status(fiber.StatusUnauthorized).
 			JSON(fiber.Map{"error": "user not authenticated"})

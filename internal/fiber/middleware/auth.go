@@ -4,7 +4,9 @@ import (
 	"strings"
 
 	pkg_jwt "github.com/celio001/prodify/pkg/jwt"
+	"github.com/celio001/prodify/pkg/logger"
 	"github.com/gofiber/fiber/v2"
+	"go.uber.org/zap"
 )
 
 const UserIDKey = "user_id"
@@ -47,7 +49,8 @@ func AuthMiddleware() fiber.Handler {
 			})
 		}
 
-		c.Set(UserIDKey, userID)
+		logger.Log.Info("authenticated user", zap.String("user_id", userID))
+		c.Locals(UserIDKey, userID)
 		return c.Next()
 	}
 }

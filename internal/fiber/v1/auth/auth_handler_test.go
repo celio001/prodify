@@ -10,6 +10,7 @@ import (
 	auth_errors "github.com/celio001/prodify/internal/auth/errors"
 	auth_service "github.com/celio001/prodify/internal/auth/service"
 	auth_mock "github.com/celio001/prodify/internal/auth/service/mock"
+	auth_types "github.com/celio001/prodify/internal/auth/types"
 	user_errors "github.com/celio001/prodify/internal/user/errors"
 	user_types "github.com/celio001/prodify/internal/user/type"
 	"github.com/celio001/prodify/pkg/logger"
@@ -418,6 +419,126 @@ func TestAuthResetPasswordHandler_InternalError(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusInternalServerError, resp.StatusCode)
+
+	mockService.AssertExpectations(t)
+}
+
+func TestRegisterUserHandler_Success(t *testing.T) {
+	logger.Init("dev")
+
+	mockService := new(auth_mock.MockAuthService)
+
+	userID := uuid.New()
+
+	createUserRequest := auth_types.CreateUserRequest{
+		Name:     "Célio",
+		Email:    "celio@email.com",
+		Password: "123456",
+	}
+
+	mockService.
+		On("RegisterUser", createUserRequest).
+		Return(&auth_types.CreateUserResponse{
+			PublicID: userID.String(),
+		}, nil)
+
+	app := fiber.New()
+	handler := &authHandler{authService: mockService}
+
+	app.Post("/register", handler.RegisterUserHandler)
+
+	body := `{
+		"name":"Célio",
+		"email":"celio@email.com",
+		"password":"123456"
+	}`
+
+	req := httptest.NewRequest(http.MethodPost, "/register", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := app.Test(req)
+
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusOK, resp.StatusCode)
+}
+
+func TestRegisterUserHandler_InvalidJSON(t *testing.T) {
+	logger.Init("dev")
+
+	mockService := new(auth_mock.MockAuthService)
+
+	app := fiber.New()
+	handler := &authHandler{authService: mockService}
+
+	app.Post("/register", handler.RegisterUserHandler)
+
+	body := `invalid-json`
+
+	req := httptest.NewRequest(http.MethodPost, "/register", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := app.Test(req)
+
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+
+	mockService.AssertNotCalled(t, "RegisterUser")
+}
+
+func TestRegisterUserHandler_ValidationError(t *testing.T) {
+	logger.Init("dev")
+
+	mockService := new(auth_mock.MockAuthService)
+
+	app := fiber.New()
+	handler := &authHandler{authService: mockService}
+
+	app.Post("/register", handler.RegisterUserHandler)
+
+	// faltando password
+	body := `{
+		"name":"Célio",
+		"email":"celio@email.com"
+	}`
+
+	req := httptest.NewRequest(http.MethodPost, "/register", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := app.Test(req)
+
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+
+	mockService.AssertNotCalled(t, "RegisterUser")
+}
+
+func TestRegisterUserHandler_UserCreationFailed(t *testing.T) {
+	logger.Init("dev")
+
+	mockService := new(auth_mock.MockAuthService)
+
+	mockService.
+		On("RegisterUser", mock.Anything).
+		Return(&auth_types.CreateUserResponse{}, user_errors.ErrUserCreationFailed)
+
+	app := fiber.New()
+	handler := &authHandler{authService: mockService}
+
+	app.Post("/register", handler.RegisterUserHandler)
+
+	body := `{
+		"name":"Célio",
+		"email":"celio@email.com",
+		"password":"123456"
+	}`
+
+	req := httptest.NewRequest(http.MethodPost, "/register", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := app.Test(req)
+
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
 
 	mockService.AssertExpectations(t)
 }

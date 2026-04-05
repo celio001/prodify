@@ -30,20 +30,20 @@ const (
 
 	softDeleteUserQuery = `UPDATE users
 	SET deleted_at = now(), updated_at = now(), is_active = false
-	WHERE user_id = $1`
+	WHERE id = $1`
 
 	updateUserQuery = `UPDATE users
 	SET
 		name = COALESCE($2, name),
 		email = COALESCE($4, email),
 		updated_at = now()
-	WHERE user_id = $1;`
+	WHERE id = $1;`
 
 	updateUserPasswordQuery = `UPDATE users
 	SET
 	password_hash = $2,
 	updated_at = now()
-	WHERE user_id = $1;`
+	WHERE id = $1;`
 )
 
 type userRepository struct {
